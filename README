@@ -1,0 +1,13 @@
+perudo-server
+
+This is a simple server program which implements the game Perudo.  To start a game with four players, run the server as follows
+
+user> perudo-server -p 4
+
+and the server will then listen on the socket given in perudo-server.conf.  When all clients have joined a random order will be assigned and the game will begin.  The server rolls the dice and communicates all public actions to all players.
+
+To run the server in verbose mode use the flag -v.  This will print the result of each round et cetera.
+
+To run the server in very verbose mode use the flag -vv.  This will print out bids et cetera as they are made.
+
+To run the server in very very verbose mode use the flag -vvv.  This will print out all function calls.
