@@ -30,6 +30,7 @@ class GameState:		#This keeps track of the players, the person that will start t
 	
 	def Broadcast(self, Env,rawmsg, *PrintfArguments):			#send a message to all players, even dead ones
 		msg = rawmsg % (PrintfArguments)	#Process arguments
+		msg = msg + "\n"			#delimit string
 		for Player in self.Players:
 			try:
 				Player.socket.send(msg)	#send to Player

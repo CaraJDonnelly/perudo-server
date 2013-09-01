@@ -62,7 +62,7 @@ class CPlayer:						#Begin class definition
 		pass
 	
 	def SendCup(self):
-		Str_Cup = "DICE: "
+		Str_Cup = "DICE! "
 		for I_Die in self.LI_Hand:
 			Str_Cup = Str_Cup + " %d"%I_Die
 		self.socket.send(Str_Cup)

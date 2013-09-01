@@ -11,3 +11,16 @@ To run the server in verbose mode use the flag -v.  This will print the result o
 To run the server in very verbose mode use the flag -vv.  This will print out bids et cetera as they are made.
 
 To run the server in very very verbose mode use the flag -vvv.  This will print out all function calls.
+
+----
+Message protocol:
+----
+There are the following keywords:
+	BID	-register a bid
+	SPOT	-say a bid is spot on
+	DOUBT	-doubt a bid
+	CHEAT!	-cheaters (or players who send malformed information) are removed from play immediately
+	DICE!	-server tells player their dice at start of round
+	ALLDICE!-server tells all players all dice at end of round
+
+If the server is asking for your input these keywords are followed by a ? e.g. "BID?".  If a player is telling the server what their bid is the keyword is followed by a colon e.g. "BID:".  If the server is making an announcement the keywords are followed by an exclamation mark e.g. "CHEAT! Alice".
