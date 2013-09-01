@@ -13,6 +13,14 @@ NewGame = gamestate.GameState(Env)				#Create the game state, initialise players
 
 Env.Verbose(1,"Game start!")					#Game start!
 
+								
+for Player in NewGame.Players:					#just check how many valid players connected
+	if Player.B_Dead == 1:
+		NewGame.I_PlayersLeft-=1
+
+if NewGame.I_PlayersLeft==0:					#If there are no players, return
+	Env.Verbose(1, "No valid players!")
+	exit
 
 
 while NewGame.I_PlayersLeft > 1:				#If there is more than one player, play a round

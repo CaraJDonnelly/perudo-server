@@ -1,4 +1,5 @@
 import sys					#access the system variables
+import socket
 
 class CEnv:
 						#start list of flags
@@ -9,6 +10,7 @@ class CEnv:
 						#end list of flags
 						
 	I_NumberOfPlayers=None				#number of players
+	ServerSocket=None				#The server socket
 						
 							#begin function definitions
 	
@@ -36,11 +38,23 @@ class CEnv:
 				self.I_NumberOfPlayers = int(sys.argv[sys.argv.index("-p")+1])	#convert the next entry to an int
 			except ValueError:
 				print "Invalid number of players"
+		else:
+			print "You must specify the number of players using -p"
+			self.I_NumberOfPlayers = 0					#Guess there are players
+		
+		#start set up the server socket
+		self.ServerSocket=socket.socket(socket.AF_INET,socket.SOCK_STREAM)	#initialise ServerSocket
+		self.ServerSocket.bind(("localhost", 1111))				#bind to localhost
+		self.ServerSocket.listen(5)						#start listening for connections, 5 should be a fine backlog
+		self.Verbose(3,"Server Socket bound")
+		#end set up the server socket
+		
 
 	def Verbose(self,I_Verbosity,Str_Print, *PrintfArguments):			#Selective printing based on verbosity
 			
 		if I_Verbosity <= self.I_Verbose:
 			print Str_Print%(PrintfArguments)
+			sys.stdout.flush()
 	
 
 

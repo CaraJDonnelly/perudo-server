@@ -7,15 +7,26 @@ def PlayNormalRound(Env,Game):
 	ActivePlayers = [x for x in GenerateActivePlayers(Game)]
 	PlayerLoop = doublylinkedloops.Cdoubly_linked_loop()
 	
-	TotalDice=0				#How many dice are there?
+	TotalDice=0				#How many dice are there? DO NOT BROADCAST THIS, it is the responsibility of the player to keep track.
 	for Player in ActivePlayers:
 		TotalDice += Player.I_HandSize
 		Player.RollCup()				#All active players roll their dice
+		Player.SendCup()				#the server tells each player what they've rolled
 		PlayerLoop.AddNode(Player)			#Create a list of all active players for this round
 		if PlayerLoop.tail.data.B_StartNext == 1:	#Is this latest node the starting player?
 			BiddingPlayerNode = PlayerLoop.tail
 			Player.B_StartNext=0
-
+	
+	Str_ActivePlayerBroadcast="PLAYERS:"	#start to generate the broadcast string telling people about who is playing this round
+	ActivePlayerNode=BiddingPlayerNode
+	while 1:
+		Str_ActivePlayerBroadcast = Str_ActivePlayerBroadcast + " " + ActivePlayerNode.data.Str_Name
+		if ActivePlayerNode.next == BiddingPlayerNode:
+			break
+		ActivePlayerNode=ActivePlayerNode.next
+	Env.Verbose(2,Str_ActivePlayerBroadcast)
+	Game.Broadcast(Env,Str_ActivePlayerBroadcast)
+	
 	Env.Verbose(3, "Total dice: %d. Generating valid bids...", TotalDice)
 	ValidNormalBids = [x for x in GenerateValidNormalBids(TotalDice)] # Generate an ordered list of all valid bids for this round
 
@@ -25,15 +36,16 @@ def PlayNormalRound(Env,Game):
 					#begin run the round
 	while 1:
 		Env.Verbose(3,"It is %s's bid.",BiddingPlayerNode.data.Str_Name)
-		NewBid = GetBid(Env,BiddingPlayerNode.data)	#Get a bid
+		NewBid = BiddingPlayerNode.data.GetBid(Env)	#Get a bid
 		if not ((NewBid in ValidNormalBids) and (ValidNormalBids.index(NewBid) > ValidNormalBids.index(CurrentBid))):			#Check bid is legal
 			Env.Verbose(1,"%s has attempted to cheat by bidding %d %d! They have been removed from the game and the round is over.", BiddingPlayerNode.data.Str_Name, NewBid[0], NewBid[1])
 			BiddingPlayerNode.data.B_Dead = 1		#Remove them from the game
 			Game.I_PlayersLeft-=1				#Reduce number of players
 			BiddingPlayerNode.next.data.B_StartNext = 1;	#Player on their left starts next round
-			return
+			return						#exit without showing dice
 		else:
 			Env.Verbose(1,"%s has bid %d %d", BiddingPlayerNode.data.Str_Name, NewBid[0], NewBid[1])
+			Game.Broadcast(Env,"BID! %s %d %d", BiddingPlayerNode.data.Str_Name, NewBid[0], NewBid[1])
 			CurrentBid=NewBid
 						#Check for anyone calling "spot on", except player who must bid next, since they are not allowed to do so
 		ActivePlayerNode=BiddingPlayerNode.next.next
@@ -41,35 +53,49 @@ def PlayNormalRound(Env,Game):
 			if ActivePlayerNode == BiddingPlayerNode.next:
 				break
 			else:
-				if GetSpotOn(Env,ActivePlayerNode.data) == 1:	#does ActivePlayerNode.data want to call spot on?
+				NextSpotOn = GetSpotOn(Env,ActivePlayerNode.data)
+				if NextSpotOn == 1:	#does ActivePlayerNode.data want to call spot on? Broadcast this
 					Env.Verbose(1,"%s says spot on!", ActivePlayerNode.data.Str_Name)
 					if EvalSpotOn(Env,ActivePlayers,CurrentBid) == 0:	#If the "spot on" was correct
-						Env.Verbose(1,"%s was wrong! They gain a die", ActivePlayerNode.data.Str_Name)
+						Game.Broadcast(Env,"SPOT! %s %d %d %d", ActivePlayerNode.data.Str_Name, CurrentBid[0], CurrentBid[1], 0)	#tell everyone that player gains a die
+						Env.Verbose(1,"%s was right! They gain a die", ActivePlayerNode.data.Str_Name)
 						GainADie(Game, BiddingPlayerNode.data)		#The correct player gains a die
 					else:
+						Game.Broadcast(Env,"SPOT! %s %d %d %d", ActivePlayerNode.data.Str_Name, CurrentBid[0], CurrentBid[1], 1)	#tell everyone that player loses a die
 						Env.Verbose(1,"%s was wrong! They lose a die", ActivePlayerNode.data.Str_Name)
 						LoseADie(Game, ActivePlayerNode.data,ActivePlayerNode.next.data)					#The incorrect player loses a die, pass next player to potentially set new starter
-					return
-				else:
+					break
+				elif NextSpotOn == 0:
 					Env.Verbose(3,"%s does not wish to call 'spot on'.", ActivePlayerNode.data.Str_Name)
+				else:
+					Env.Verbose(1, "Warning: %s has served a malformed spot on.  Assuming they do not wish to call spot on.", ActivePlayerNode.data.Str_Name)
+					BiddingPlayerNode=BiddingPlayerNode.next		#advance play
+					
 				ActivePlayerNode=ActivePlayerNode.next
 		
-		if GetDoubt(Env,BiddingPlayerNode.next.data) == 1:		#Does the next player want to say "I doubt?"
+		NextPlayerDoubt = BiddingPlayerNode.next.data.GetDoubt(Env)
+		if NextPlayerDoubt == 1:			#Does the next player want to say "I doubt?"
 			Env.Verbose(1,"%s doubts!", BiddingPlayerNode.next.data.Str_Name)
 			if EvalIDoubt(Env,ActivePlayers, CurrentBid) == 0:	#If the bid was correct
+				Game.Broadcast("DOUBT! %s 0",BiddingPlayerNode.data.Str_Name)			#tell everyone that BiddingPlayerNode was right
 				LoseADie(Game,BiddingPlayerNode.next.data, BiddingPlayerNode.next.next.data)	#Doubter loses a die, pass next player to potentially set new starter
 				Env.Verbose(1,"%s was wrong! They lose a die", BiddingPlayerNode.next.data.Str_Name)
-				return
+				break
 			else:							#If the bid was incorrect
+				Game.Broadcast("DOUBT! %s 1",BiddingPlayerNode.data.Str_Name)			#tell everyone that BiddingPlayerNode was wrong
 				LoseADie(Game,BiddingPlayerNode.data, BiddingPlayerNode.next.data)	#Doubter loses a die, pass next player to potentially set new starter
 				Env.Verbose(1,"%s was wrong! They lose a die", BiddingPlayerNode.data.Str_Name)
-				return
-		else:
+				break
+		elif NextPlayerDoubt == 0:					#if they do not doubt
 			Env.Verbose(3,"%s does not want to call 'I doubt'", BiddingPlayerNode.next.data.Str_Name)
-			BiddingPlayerNode=BiddingPlayerNode.next
+			BiddingPlayerNode=BiddingPlayerNode.next		#advance play
+		elif NextPlayerDoubt == -1:					#Error code
+			Env.Verbose(1, "Warning %s has served a malformed doubt.  Assuming they do not wish to call Doubt.", BiddingPlayerNode.next.data.Str_Name)
+			BiddingPlayerNode=BiddingPlayerNode.next		#advance play
 
-					#end run the round
-					#No cleanup required
+							#end run the round
+		Game.BroadcastDice(ActivePlayers)	#Tell everyone what the dice were
+		pass					#No cleanup required
 
 def PlayObligedRound(Env,Game):
 	Env.Verbose(1,"Starting obliged round...")
@@ -194,16 +220,10 @@ def GenerateActivePlayers(Game):
 			yield CurrentPlayer
 	pass
 
-def GetBid(Env,Player):
-	#BEGIN TEST CODE
-	return [1,2]
-	#END TEST CODE
 
 def GetSpotOn(Env,Player):
 	return 0
 
-def GetDoubt(Env,Player):
-	return 1
 
 
 def EvalIDoubt(Env,ActivePlayers,CurrentBid, ObligedRound=0):
