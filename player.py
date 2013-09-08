@@ -92,6 +92,18 @@ class CPlayer:						#Begin class definition
 			Env.Verbose(1,"ERROR: Malformed bid from %s!  Returning illegal bid.", self.Str_Name)
 			return [0,0]				#return an illegal bid
 		
+	def GetSpotOn(self,Env):
+		self.socket.send("SPOT?\n")					#Invite the player to bid
+		Str_rawSpot = self.GetCodeWord(Env, "SPOT:")			#recieve and search buffer for bid
+
+		try:
+			LStr_rawSpotWords = Str_rawSpot.split()			#Split into words
+			NewSpot = int(LStr_rawSpotWords[1])			#Cast to bid format
+			return NewSpot						#return the bid
+		except (ValueError, AttributeError):				#If Str_rawBid == None or can't cast
+			Env.Verbose(1,"ERROR: Malformed spot on from %s!  Returning error.", self.Str_Name)
+			return -1				#return an error
+
 	def GetDoubt(self,Env):
 		self.socket.send("DOUBT?\n")					#Invite the player to doubt
 		Str_rawDoubt = self.GetCodeWord(Env, "DOUBT:")			#recieve and search buffer for doubt

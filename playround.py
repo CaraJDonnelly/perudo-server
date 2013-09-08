@@ -2,6 +2,7 @@ import ruleset
 import doublylinkedloops
 
 def PlayNormalRound(Env,Game):
+	Game.Broadcast("ROUND! 0")	#Tell players we are starting a new normal round
 	Env.Verbose(1,"Starting normal round...")
 					#begin prepare for the round
 	ActivePlayers = [x for x in GenerateActivePlayers(Game)]
@@ -54,7 +55,7 @@ def PlayNormalRound(Env,Game):
 			if ActivePlayerNode == BiddingPlayerNode.next:
 				break
 			else:
-				NextSpotOn = GetSpotOn(Env,ActivePlayerNode.data)
+				NextSpotOn = ActivePlayerNode.data.GetSpotOn(Env)
 				if NextSpotOn == 1:	#does ActivePlayerNode.data want to call spot on? Broadcast this
 					Env.Verbose(1,"%s says spot on!", ActivePlayerNode.data.Str_Name)
 					if EvalSpotOn(Env,ActivePlayers,CurrentBid) == 0:	#If the "spot on" was correct
@@ -70,7 +71,6 @@ def PlayNormalRound(Env,Game):
 					Env.Verbose(3,"%s does not wish to call 'spot on'.", ActivePlayerNode.data.Str_Name)
 				else:
 					Env.Verbose(1, "Warning: %s has served a malformed spot on.  Assuming they do not wish to call spot on.", ActivePlayerNode.data.Str_Name)
-					BiddingPlayerNode=BiddingPlayerNode.next		#advance play
 					
 				ActivePlayerNode=ActivePlayerNode.next
 		
@@ -99,6 +99,7 @@ def PlayNormalRound(Env,Game):
 		pass					#No cleanup required
 
 def PlayObligedRound(Env,Game):
+	Game.Broadcast("ROUND! 1")	#Tell players we are starting a new obliged round
 	Env.Verbose(1,"Starting obliged round...")
 	Game.ObligedRoundNext=0		#Our bool has done its job and must be reset
 					#begin prepare for the round
@@ -165,7 +166,8 @@ def PlayObligedRound(Env,Game):
 			if ActivePlayerNode == BiddingPlayerNode.next:
 				break
 			else:
-				if GetSpotOn(Env,ActivePlayerNode.data) == 1:	#does ActivePlayerNode.data want to call spot on?
+				NextSpotOn = ActivePlayerNode.data.GetSpotOn(Env)
+				if NextSpotOn == 1:	#does ActivePlayerNode.data want to call spot on?
 					Env.Verbose(1,"%s says spot on!", ActivePlayerNode.data.Str_Name)
 					if EvalSpotOn(Env,ActivePlayers,CurrentBid) == 0:	#If the "spot on" was correct
 						Game.Broadcast(Env,"SPOT! %s %d %d %d", ActivePlayerNode.data.Str_Name, CurrentBid[0], CurrentBid[1], 0)	#tell everyone that player gains a die
@@ -176,8 +178,10 @@ def PlayObligedRound(Env,Game):
 						Env.Verbose(1,"%s was wrong! They lose a die", ActivePlayerNode.data.Str_Name)
 						LoseADie(Game, ActivePlayerNode.data,ActivePlayerNode.next.data)					#The incorrect player loses a die, pass next player to potentially set new starter
 					return
-				else:
+				elif NextSpotOn==0:
 					Env.Verbose(3,"%s does not wish to call 'spot on'.", ActivePlayerNode.data.Str_Name)
+				else:
+					Env.Verbose(1, "Warning: %s has served a malformed spot on.  Assuming they do not wish to call spot on.", ActivePlayerNode.data.Str_Name)
 				ActivePlayerNode=ActivePlayerNode.next
 		
 		if GetDoubt(Env,BiddingPlayerNode.next.data) == 1:		#Does the next player want to say "I doubt?"
@@ -239,11 +243,6 @@ def GenerateActivePlayers(Game):
 		if CurrentPlayer.B_Dead == 0:
 			yield CurrentPlayer
 	pass
-
-
-def GetSpotOn(Env,Player):
-	return 0
-
 
 
 def EvalIDoubt(Env,ActivePlayers,CurrentBid, ObligedRound=0):
