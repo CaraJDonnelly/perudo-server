@@ -40,14 +40,19 @@ class CEnv:
 				print "Invalid number of players"
 		else:
 			print "You must specify the number of players using -p"
-			self.I_NumberOfPlayers = 0					#Guess there are players
+			self.I_NumberOfPlayers = 0					#Guess there aren't any players
+			sys.exit();							#...return an error code
 		
 		#start set up the server socket
-		self.ServerSocket=socket.socket(socket.AF_INET,socket.SOCK_STREAM)	#initialise ServerSocket
-		self.ServerSocket.bind(("localhost", 1111))				#bind to localhost
-		self.ServerSocket.listen(5)						#start listening for connections, 5 should be a fine backlog
-		self.Verbose(3,"Server Socket bound")
-		#end set up the server socket
+		try:
+			self.ServerSocket=socket.socket(socket.AF_INET,socket.SOCK_STREAM)	#initialise ServerSocket
+			self.ServerSocket.bind(("localhost", 1111))				#bind to localhost
+			self.ServerSocket.listen(5)						#start listening for connections, 5 should be a fine backlog
+			self.Verbose(3,"Server Socket bound")
+			#end set up the server socket
+		except:
+			self.Verbose(1, "Could not bind server socket!")
+			sys.exit()
 		
 
 	def Verbose(self,I_Verbosity,Str_Print, *PrintfArguments):			#Selective printing based on verbosity
@@ -56,6 +61,7 @@ class CEnv:
 			print Str_Print%(PrintfArguments)
 			sys.stdout.flush()
 	
-
+	def CleanUp(self):
+		self.ServerSocket.close()
 
 						#end function definitions

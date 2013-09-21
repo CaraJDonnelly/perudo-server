@@ -57,15 +57,19 @@ class CPlayer:						#Begin class definition
 			self.Str_Name="ghost"
 			self.socket.close()
 		else:
-			self.socket.send("PERUDO!")
+			self.socket.send("PERUDO!\n")
 			self.Str_Name=self.socket.recv(32)		#get the player name
 		pass
 	
-	def SendCup(self):
-		Str_Cup = "DICE! "
+	def SendCup(self, Env):
+		Str_Cup = "DICE: "
 		for I_Die in self.LI_Hand:
 			Str_Cup = Str_Cup + " %d"%I_Die
-		self.socket.send(Str_Cup)
+		Str_Cup = Str_Cup + "\n"
+		try:
+			self.socket.send(Str_Cup)
+		except socket.error:
+			Env.Verbose(1, "Warning!  Could not send cup to %s", self.Str_Name)
 		
 	def GetCodeWord(self, Env, Str_CodeWord):
 		try:								#safely receive data
@@ -131,6 +135,3 @@ class CPlayer:						#Begin class definition
 		except (ValueError, AttributeError):				#If Str_rawDoubt == None or can't cast
 			Env.Verbose(1,"ERROR: Malformed \"spot on\" from %s!  Returning illegal spot on.", self.Str_Name)
 			return -1				#return an illegal bid
-							#End function definitions
-
-

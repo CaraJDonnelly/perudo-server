@@ -11,6 +11,8 @@ Env = setup.CEnv()				#Process the argv string
 
 NewGame = gamestate.GameState(Env)				#Create the game state, initialise players
 
+
+
 Env.Verbose(1,"Game start!")					#Game start!
 
 								
@@ -33,5 +35,6 @@ for Player in NewGame.Players:
 	if Player.B_Dead == 0:
 		Env.Verbose(1,"The winner was %s.", Player.Str_Name)	#print out the winner
 
+Env.CleanUp();
 Env.Verbose(1,"Game finished")				#Game finished
 

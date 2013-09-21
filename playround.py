@@ -2,7 +2,7 @@ import ruleset
 import doublylinkedloops
 
 def PlayNormalRound(Env,Game):
-	Game.Broadcast("ROUND! 0")	#Tell players we are starting a new normal round
+	Game.Broadcast(Env,"ROUND! 0")	#Tell players we are starting a new normal round
 	Env.Verbose(1,"Starting normal round...")
 					#begin prepare for the round
 	ActivePlayers = [x for x in GenerateActivePlayers(Game)]
@@ -12,7 +12,7 @@ def PlayNormalRound(Env,Game):
 	for Player in ActivePlayers:
 		TotalDice += Player.I_HandSize
 		Player.RollCup()				#All active players roll their dice
-		Player.SendCup()				#the server tells each player what they've rolled
+		Player.SendCup(Env)				#the server tells each player what they've rolled
 		PlayerLoop.AddNode(Player)			#Create a list of all active players for this round
 		if PlayerLoop.tail.data.B_StartNext == 1:	#Is this latest node the starting player?
 			BiddingPlayerNode = PlayerLoop.tail
@@ -26,6 +26,7 @@ def PlayNormalRound(Env,Game):
 			break
 		ActivePlayerNode=ActivePlayerNode.next
 	Env.Verbose(2,Str_ActivePlayerBroadcast)
+	Str_ActivePlayerBroadcast = Str_ActivePlayerBroadcast + "\n"
 	Game.Broadcast(Env,Str_ActivePlayerBroadcast)
 	
 	Env.Verbose(3, "Total dice: %d. Generating valid bids...", TotalDice)
